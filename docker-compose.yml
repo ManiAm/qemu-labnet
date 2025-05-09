@@ -1,0 +1,21 @@
+services:
+
+  qemu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TARGETARCH: ${TARGETARCH}
+    container_name: ${CONTAINER_NAME}
+    hostname: ${CONTAINER_NAME}
+    network_mode: host  # For VXLAN, bridge, and raw networking
+    devices:
+      - /dev/kvm      # For KVM acceleration
+      - /dev/net/tun  # For TAP interface support
+    cap_add:
+      - NET_ADMIN     # For networking configuration (bridge, vxlan, tun/tap)
+      - NET_RAW       # For raw packet sockets (e.g., ping)
+      - SYS_MODULE    # Allows modprobe if needed
+    privileged: true  # Optional fallback; enables full device/network access
+    tty: true
+    stdin_open: true
