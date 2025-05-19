@@ -151,19 +151,11 @@ The [mypci_configurable.c](hw/pci/mypci_configurable.c) module defines a convent
 
 Instantiates the mypci_configurable PCI device and sets its `reg` field to `0x42` before the guest boots. This value becomes the initial contents of the device’s MMIO register, which can then be read by the guest operating system through memory-mapped I/O. Such configuration is particularly useful for testing, feature toggling, or emulating specific device states in virtual environments.
 
-## More Advanced
+## Future Work
 
-
-expand this with:
-PCIe capability
-add interrupt support (INTx/MSI)
-implement custom configuration space behavior
-
-
-Optionally enhance the device by adding:
-
-A second BAR
-Interrupt support (MSI or legacy)
-Bus mastering (DMA) capability
-
-call-backs outside of QEMU source code
+- PCIe capability
+- Add interrupt support (INTx/MSI)
+- Implement custom configuration space behavior
+- Add a second BAR
+- Bus mastering (DMA) capability
+- call-backs outside of QEMU source code

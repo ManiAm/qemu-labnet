@@ -1,7 +1,7 @@
 
 # QEMU-LabNet
 
-qemu-labnet is a cross-architecture virtualization testbed designed to emulate and interconnect virtual machines across heterogeneous hardware platforms. The project deploys two lightweight QEMU virtual machines — one running on a ARM64 system such as Raspberry Pi 5, and the other on an x86_64-based system like the UM890 Pro. These VMs are configured to communicate with each other, enabling bi-directional traffic exchange for testing network protocols, interoperability, and performance across architectures.
+qemu-labnet is a cross-architecture virtualization testbed designed to emulate and interconnect virtual machines across heterogeneous hardware platforms. The project deploys two lightweight QEMU virtual machines - one running on a ARM64 system such as Raspberry Pi 5, and the other on an x86_64-based system like the UM890 Pro. These VMs are configured to communicate with each other, enabling bi-directional traffic exchange for testing network protocols, interoperability, and performance across architectures.
 
 To maintain visibility and control over VM behavior, the project leverages QEMU's QMP (QEMU Machine Protocol), which provides a programmatic interface to observe live VM state, retrieve metrics, and issue commands such as snapshots, resets, and device management. A Flask-based web application is setup to serve as a user interface for managing and visualizing the virtual lab. Through this interface, users can monitor VM health, observe traffic flows, and send commands through QMP.
 
