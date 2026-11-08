@@ -1,23 +1,12 @@
-
 # QEMU-LabNet
 
 qemu-labnet is a cross-architecture virtualization testbed designed to emulate and interconnect virtual machines across heterogeneous hardware platforms. The project deploys two lightweight QEMU virtual machines - one running on a ARM64 system such as Raspberry Pi 5, and the other on an x86_64-based system like the UM890 Pro. These VMs are configured to communicate with each other, enabling bi-directional traffic exchange for testing network protocols, interoperability, and performance across architectures.
 
 To maintain visibility and control over VM behavior, the project leverages QEMU's QMP (QEMU Machine Protocol), which provides a programmatic interface to observe live VM state, retrieve metrics, and issue commands such as snapshots, resets, and device management. A Flask-based web application is setup to serve as a user interface for managing and visualizing the virtual lab. Through this interface, users can monitor VM health, observe traffic flows, and send commands through QMP.
 
-<img src="pics/qemu-labnet.jpeg" alt="segment" width="800">
+<img src="pics/qemu-labnet.jpeg" alt="segment" width="1200">
 
-## QEMU (Quick Emulator)
-
-QEMU is an open-source emulator that can perform hardware virtualization. QEMU operates in several modes:
-
-- **System Emulation**: QEMU emulates an entire hardware platform, including the CPU, memory, storage, and a variety of peripheral devices. This mode enables the execution of complete operating systems designed for different architectures, making it ideal for development, testing, and system-level experimentation. It provides a self-contained virtual environment that behaves like a physical machine.
-
-- **User-mode Emulation**: In this mode, QEMU emulates individual user-space programs compiled for a different CPU architecture than the host. It enables cross-architecture binary execution without the need to emulate an entire system. For example, an ARM binary can be run on an x86 host without recompilation. This is particularly useful for debugging or testing cross-compiled applications.
-
-- **Virtualization**: QEMU can operate as a hardware-assisted hypervisor by integrating with virtualization backends such as the Linux Kernel-based Virtual Machine (KVM). When paired with KVM, QEMU leverages the host CPU to execute guest code directly, providing near-native performance. In this role, QEMU acts as either a standalone virtual machine monitor (VMM) or as a device model provider for other hypervisors like Xen, Apple's HVF (on macOS), and Microsoft's WHPX (on Windows).
-
-Our primary focus is on system emulation accelerated with KVM, where QEMU emulates full hardware platforms while leveraging hardware virtualization through KVM interface. This places the project at the intersection of system emulation and virtualization in QEMU's architecture.
+> **Background:** This project assumes familiarity with QEMU, KVM, QMP, and host-guest file sharing. For a comprehensive introduction to these topics, see the [Virtualization Primer](https://github.com/ManiAm/primer-virtualization).
 
 ## Getting Started
 
@@ -26,7 +15,7 @@ This project runs two QEMU virtual machines on separate hardware platforms:
 - One VM runs on a Raspberry Pi 5 (ARM64)
 - The other VM runs on a UM890 Pro mini-pc (x86_64)
 
-Both hosts are running Ubuntu 22.04 LTS. Each VM is launched using QEMU in system emulation mode, accelerated by KVM. To ensure optimal performance, KVM must be enabled on both hosts. To verify KVM support, run the following commands on each host machine.
+Both hosts are running Ubuntu 22.04 LTS. Each VM is launched using QEMU in system emulation mode, accelerated by KVM. To ensure optimal performance, KVM must be enabled on both hosts (see the primer's [QEMU and KVM](https://github.com/ManiAm/primer-virtualization/blob/master/docs/11_qemu_and_kvm.md) chapter for details). Verify KVM support:
 
 ```bash
 sudo apt update
@@ -129,39 +118,9 @@ PING 10.10.10.1 (10.10.10.1): 56 data bytes
 
 ## Sharing Data between Host and VM
 
-Sharing data between a host system and a virtual machine is a foundational requirement in virtualized environments. Whether you're transferring configuration files, logs, datasets, or binaries, an efficient and reliable method to move data between the host and guest VM streamlines development, testing, and automation workflows. QEMU supports a variety of mechanisms for data sharing between host and guest OS:
+For a comprehensive comparison of all host-guest file sharing methods (ISO, SCP, NFS, TFTP, 9pfs, Virtio-FS, and more), see the primer's [Host-Guest File Sharing](https://github.com/ManiAm/primer-virtualization/blob/master/docs/15_host_guest_file_sharing.md) chapter.
 
-| Method        | Bi-directional?  | R/W Access?  | Performance  | Networking Required? | Guest Support Required?  |
-|---------------|------------------|--------------|--------------|----------------------|--------------------------|
-| ISO           | Host → Guest     | Read-only    | High         | No                   | No                       |
-| SCP/Rsync     | Yes              | Yes          | Medium       | Yes                  | SSH server/client        |
-| SSHFS         | Yes              | Yes          | Medium       | Yes                  | SSH server/client        |
-| NFS/SMB       | Yes              | Yes          | High         | Yes                  | Yes                      |
-| QEMU TFTP     | Host → Guest     | Read-only    | Low          | Yes                  | TFTP client              |
-| 9pfs          | Host → Guest     | Yes          | Medium       | No                   | Yes (kernel module)      |
-| Virtio-FS     | Yes              | Yes          | High         | No                   | Yes (virtiofs driver)    |
-
-- Bi-directional
-
-    Bi-directionality refers to whether both the host and the guest can exchange data in either direction using the same mechanism. Methods like SCP, SSHFS, NFS/SMB, and Virtio-FS enable two-way data access and synchronization. In contrast, ISO, TFTP and 9pfs are unidirectional, only exposing data from the host to the guest without allowing the host to interact with guest-side files through the same interface.
-
-- R/W Access
-
-    This indicates whether the guest VM can read from and write to the shared resource. Some methods, like ISO or TFTP, are inherently read-only, making them suitable for static content delivery. Others, like SCP, SSHFS, NFS, 9pfs, and Virtio-FS, support read/write access, allowing the guest to not only consume files but also modify or create them on the shared mount.
-
-- Performance
-
-    This reflects the relative speed and efficiency of each method in transferring or accessing files. Virtio-FS and NFS generally offer the best performance for high-throughput or low-latency workloads, making them ideal for sharing large codebases or datasets. SSHFS and 9pfs provide moderate performance, sufficient for interactive or lightweight tasks. TFTP and ISO are read-only and slower, suited only for bootstrapping or static provisioning.
-
-- Networking Required
-
-    This indicates whether the data sharing mechanism relies on network connectivity between the host and the guest. Techniques like SCP, SSHFS, NFS/SMB, and TFTP require the guest to be reachable over a network interface, and often require services (e.g., SSH or NFS daemons) to be running. In contrast, ISO, 9pfs, and Virtio-FS work entirely through virtual hardware channels and do not require networking, making them ideal for minimal or isolated environments.
-
-- Guest Support Required
-
-    This indicates whether the guest OS needs specific drivers or modules to use the sharing method. Virtio-FS requires a modern Linux kernel with the virtiofs driver; 9pfs needs 9p and virtio support. NFS/SMB, SSHFS, and SCP require user-space tools or services like sshd, mount.nfs, or sshfs. In contrast, ISO and TFTP need minimal or no guest-side configuration, making them highly portable and easy to use across operating systems.
-
-In this project, we use 9pfs (Plan 9 Filesystem) to share a directory from the host system to the guest virtual machine. This approach allows the guest OS to access and modify files in a specified host directory without requiring network connectivity. It is lightweight, does not depend on a network stack, and is particularly suitable for development and test environments. To configure 9pfs in QEMU, we have included the following options when launching the VM:
+In this project, we use **9pfs** (Plan 9 Filesystem) to share a directory from the host system to the guest virtual machine. This approach allows the guest OS to access and modify files in a specified host directory without requiring network connectivity. To configure 9pfs in QEMU, we have included the following options when launching the VM:
 
 ```bash
 -fsdev local,id=myfs,path=/workspace,security_model=mapped \
@@ -176,16 +135,7 @@ Once the virtual machine is running, mount the shared directory inside the guest
 mount -t 9p -o trans=virtio workspace-shared /mnt
 ```
 
-After mounting, you can change to the shared directory:
-
-```bash
-cd /mnt
-```
-
-The contents of `/workspace` on the host will now be accessible from `/mnt` inside the guest. Both the host and guest can read and write files within the shared folder. We are using the `mapped` security model, which maps file ownership between the host and guest. This means:
-
-- The guest sees the host’s actual file ownership and permissions.
-- Files created by the guest will appear on the host with the guest's UID/GID.
+The contents of `/workspace` on the host will now be accessible from `/mnt` inside the guest. Both the host and guest can read and write files within the shared folder. We are using the `mapped` security model, which maps file ownership between the host and guest.
 
 ## Sending Traffic Between Two VMs
 
@@ -242,9 +192,9 @@ Payload: Hello from Scapy on eth1
 
 ## QEMU Machine Protocol (QMP)
 
-QEMU Machine Protocol (QMP) is a JSON-based protocol used to control QEMU instances. It allows you to issue commands to QEMU to manage virtual machines, such as starting, or stopping them. QMP provides a structured way to interact with QEMU instances programmatically, making it suitable for automation and integration with other software. QMP is accessed via a network socket (TCP or Unix domain socket) and can be used by scripts or external programs to control QEMU instances. To start the QMP server on QEMU, simply specify the `-qmp` option.
+For background on the QMP protocol, handshake, and command reference, see the primer's [QMP](https://github.com/ManiAm/primer-virtualization/blob/master/docs/14_qemu_qmp.md) chapter.
 
-We use a Python script as [QMP client](qmp_client.py). Right when connected, the QMP server will issue a greeting message, which signals that the connection has been successfully established. When a client successfully establishes a connection, the server is in `capabilities negotiation mode`. Clients should use the `qmp_capabilities` command to enable capabilities advertised in the server greeting which they support. Once the capability negotiation is finished, the QMP server enters command mode. You can find QMP reference manual in [here](https://qemu-project.gitlab.io/qemu/interop/qemu-qmp-ref.html).
+We use a Python script as [QMP client](qmp_client.py) to communicate with the running VM. The client connects to a Unix domain socket, completes the QMP capability negotiation, and then issues commands to query VM state, manage snapshots, and control devices.
 
 ## QEMU VM Monitoring and Control
 
@@ -307,7 +257,7 @@ Note that QMP is not designed for concurrent requests unless explicitly managed 
 
 ## Adding a Custom PCI Device
 
-Adding a custom PCI device to QEMU involves writing a new device model in C language that conforms to QEMU’s device framework and integrating it into the build system. As part of the Docker image build, we copy the custom device source file in QEMU's source tree under `hw/pci/`. We then modify the `meson.build` file to compile and register it as part of the QEMU build. Once integrated, the device can be instantiated in a virtual machine using QEMU's `-device` option.
+Adding a custom PCI device to QEMU involves writing a new device model in C language that conforms to QEMU's device framework and integrating it into the build system. As part of the Docker image build, we copy the custom device source file in QEMU's source tree under `hw/pci/`. We then modify the `meson.build` file to compile and register it as part of the QEMU build. Once integrated, the device can be instantiated in a virtual machine using QEMU's `-device` option.
 
 This setup is especially useful for hardware prototyping, driver development, teaching, and security research. Developers can test how the operating system enumerates and communicates with PCI devices, simulate DMA or memory-mapped I/O, and develop kernel modules without needing physical hardware. Communication with the device can be handled via standard mechanisms such as telnet to a QEMU-exposed character device or MMIO-backed register interfaces.
 
